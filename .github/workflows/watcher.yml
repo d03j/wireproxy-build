@@ -1,0 +1,45 @@
+name: Check Upstream Releases
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Latest Upstream Release Tag
+        id: upstream
+        run: |
+          TAG=$(curl -s https://api.github.com/repos/windtf/wireproxy/releases/latest | jq -r '.tag_name')
+          if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
+            echo "Failed to fetch upstream tag" && exit 1
+          fi
+          echo "version=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Get Our Latest Package Tag
+        id: local
+        run: |
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://api.github.com/orgs/$REPO_OWNER/packages/container/wireproxy-build/versions)
+          
+          if [ "$STATUS_CODE" = "200" ]; then
+            TAG_EXISTS=$(curl -s "https://api.github.com/orgs/$REPO_OWNER/packages/container/wireproxy-build/versions" | jq ".[] | .metadata.container.tags[] | select(. == \"${{ steps.upstream.outputs.version }}\")")
+            if [ -n "$TAG_EXISTS" ]; then
+              echo "exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "exists=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger Build if New Release Found
+        if: steps.local.outputs.exists != 'true'
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/dispatches \
+            -d "{\"event_type\": \"upstream_release\", \"client_payload\": {\"version\": \"${{ steps.upstream.outputs.version }}\"}}"
