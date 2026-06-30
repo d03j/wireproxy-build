@@ -13,7 +13,16 @@ RUN if [ "$WIREPROXY_TAG" = "latest" ]; then \
 
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o wireproxy ./cmd/wireproxy
 
+# --- Runtime Stage ---
 FROM docker.io/library/alpine:latest
+
+# Install su-exec to handle dropping privileges safely
+RUN apk add --no-cache su-exec
+
 COPY --from=builder /build/wireproxy /usr/local/bin/wireproxy
-USER 65534:65534
-ENTRYPOINT ["/usr/local/bin/wireproxy", "-c", "/etc/wireproxy.conf"]
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# Must start as root to allow entrypoint.sh to map the user IDs dynamically
+USER root
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
