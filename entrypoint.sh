@@ -1,12 +1,18 @@
 #!/bin/sh
 set -e
 
-# Default to standard alpine IDs if variables aren't provided
 PUID=${PUID:-1000}
 PGID=${PGID:-1000}
 
-# Create a dedicated group and user dynamically inside the container namespace
-# matching the host UID/GID passed by the user
+# --- LINUXSERVER.IO STYLE BYPASS ---
+# If the user specifically requests UID 0, skip user creation 
+# and run wireproxy directly as container root.
+if [ "$PUID" = "0" ] || [ "$PGID" = "0" ]; then
+    echo "PUID/PGID is 0. Running directly as container root..."
+    exec /usr/local/bin/wireproxy -c /etc/wireproxy.conf
+fi
+
+# Otherwise, proceed with custom unprivileged user mapping
 if ! getent group wireuser >/dev/null; then
     addgroup -g "$PGID" wireuser
 fi
@@ -16,6 +22,4 @@ if ! getent passwd wireuser >/dev/null; then
 fi
 
 echo "Switching execution to user UID: $PUID, GID: $PGID"
-
-# Use su-exec to safely drop from root down to the new unprivileged user
 exec su-exec wireuser:wireuser /usr/local/bin/wireproxy -c /etc/wireproxy.conf
