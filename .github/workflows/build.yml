@@ -1,4 +1,27 @@
-steps:
+name: Build and Push Wireproxy to GHCR
+
+on:
+  repository_dispatch:
+    types: [upstream_release]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Manual version override (e.g., v1.0.6)'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
 
