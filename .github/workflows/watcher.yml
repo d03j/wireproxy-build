@@ -12,7 +12,8 @@ jobs:
       - name: Get Latest Upstream Release Tag
         id: upstream
         run: |
-          TAG=$(curl -s https://api.github.com/repos/windtf/wireproxy/releases/latest | jq -r '.tag_name')
+#          TAG=$(curl -s https://api.github.com/repos/windtf/wireproxy/releases/latest | jq -r '.tag_name')
+          TAG=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/windtf/wireproxy/releases/latest | jq -r '.tag_name')
           if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
             echo "Failed to fetch upstream tag" && exit 1
           fi
