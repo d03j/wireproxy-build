@@ -9,8 +9,6 @@ Wireproxy expects **one and only one `[Interface]` section** per running instanc
 * **Container Mount Path:** `/etc/wireproxy.conf`
 * **Host Path Example:** `~/.config/wireproxy/wireproxy.conf`
 
----
-
 ## Usage Example (`podman run`)
 
 Run the container as an unprivileged user in detached mode, mapping your local configuration file and proxy ports:
@@ -23,10 +21,12 @@ podman run -d \
   -p 8080:8080 \
   -v ~/.config/wireproxy/wireproxy.conf:/etc/wireproxy.conf \
   ghcr.io/d03j/wireproxy-build:latest
+```
 
 ## Registry Path
 ```text
 ghcr.io/d03j/wireproxy-build:latest
+```
 
 ## License
 
